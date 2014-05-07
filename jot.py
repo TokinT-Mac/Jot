@@ -6,10 +6,12 @@ class Jot(QtGui.QTabWidget):
 	def __init__(self):
 		super(Jot, self).__init__()
 		self.windowControls = WindowControls(self)
+		self.defaultSize = (1000,600,1000,600)
 		self.initUI()
 		
 	def initUI(self):
-		self.setGeometry(500,300,500,300)
+		self.setGeometry(*self.defaultSize)
+		self.move(QtGui.QDesktopWidget().availableGeometry().center()-self.rect().center())
 		self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
 		self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
 		self.setTabShape(QtGui.QTabWidget.Triangular)
@@ -17,6 +19,7 @@ class Jot(QtGui.QTabWidget):
 		self.setUsesScrollButtons(False)
 		self.setMovable(True)
 		self.setTabsClosable(True)
+		self.maximized = False
 		
 		
 		self.TestTabs()
@@ -29,6 +32,7 @@ class Jot(QtGui.QTabWidget):
 	
 	def initControls(self):
 		self.windowControls.closeWindow.triggered.connect(self.close)
+		self.windowControls.maximizeWindow.triggered.connect(self.maximizeEvent)
 		
 	def initActions(self):
 		newAction = QtGui.QAction('New', self)
@@ -74,7 +78,27 @@ class Jot(QtGui.QTabWidget):
 	def newFile(self):
 		print 't'
 		
-	
+	def maximizeEvent(self):
+		if not self.maximized:
+			self.lastPosition = self.mapToGlobal(self.pos())
+			screen = QtGui.QDesktopWidget().availableGeometry()
+			self.move(0,0)
+			self.resize(screen.width(), screen.height())
+			self.maximized = True
+			
+		else:
+			self.resize(self.defaultSize[0], self.defaultSize[1])
+			self.move(self.lastPosition)
+			self.maximized = False
+			
+	def paintEvent(self, event):
+		super(Jot, self).paintEvent(event)
+		if self.maximized:
+			backgroundColor = QtGui.QColor(QtCore.Qt.black)
+			backgroundColor.setAlpha(200)
+			paint = QtGui.QPainter(self)
+			paint.fillRect(self.rect(), backgroundColor)
+		
 		
 class WindowControls(QtGui.QWidget):
 	def __init__(self, parent):
@@ -85,17 +109,17 @@ class WindowControls(QtGui.QWidget):
 		self.initMin()
 		
 	def initUI(self):
-		self.closeButton = QtGui.QToolButton(self)
+		self.closeButton = ControlButton(self)
 		self.closeButton.setStyleSheet("QToolButton { border: none; padding: 0px; }")
 		self.closeButton.setIconSize(QtCore.QSize(16,16))
 		self.closeButton.setAutoRaise(True)
 
-		self.maxButton = QtGui.QToolButton(self)
+		self.maxButton = ControlButton(self)
 		self.maxButton.setStyleSheet("QToolButton { border: none; padding: 0px; }")
 		self.maxButton.setIconSize(QtCore.QSize(16,16))
 		self.maxButton.setAutoRaise(True)
 
-		self.minButton = QtGui.QToolButton(self)
+		self.minButton = ControlButton(self)
 		self.minButton.setStyleSheet("QToolButton { border: none; padding: 0px; }")
 		self.minButton.setIconSize(QtCore.QSize(16,16))
 		self.minButton.setAutoRaise(True)
@@ -134,8 +158,50 @@ class WindowControls(QtGui.QWidget):
 		self.minimizeWindow.setIcon(minIcon)
 		self.minButton.setDefaultAction(self.minimizeWindow)
 		
-	def connectClose(self, Action):
-		self.closeButton.setDefaultAction(Action)
+	'''def mousePressEvent(self, event):
+		self.offset = event.pos()
+
+	def mouseMoveEvent(self, event):
+		x=event.globalX()
+		y=event.globalY()
+		x_w = self.offset.x()
+		y_w = self.offset.y()
+		self.parent().move(x-x_w, y-y_w)
+		'''
+	def move(self, *args):
+		self.parent().move(*args)
+		
+class ControlButton(QtGui.QToolButton):
+	def mousePressEvent(self, event):
+		localOffset = event.pos()
+		widgetOffset = self.mapToParent(localOffset)
+		globalOffset = self.parent().mapToParent(widgetOffset)
+
+		self.offset = globalOffset
+		self.jitter = 0
+		self.moved = False
+
+		super(ControlButton, self).mousePressEvent(event)
+		
+	def mouseMoveEvent(self, event):
+		if self.offset:
+			self.jitter += 1
+			
+		if self.jitter > 5:
+			x=event.globalX()
+			y=event.globalY()
+			x_w = self.offset.x()
+			y_w = self.offset.y()
+			self.parent().move(x-x_w, y-y_w)
+
+			self.moved = True
+		
+	def mouseReleaseEvent(self, event):
+		if self.moved:
+			self.moved = False
+			self.offset = None
+		else:
+			super(ControlButton, self).mouseReleaseEvent(event)
 
 		
 def main():
