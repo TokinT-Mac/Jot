@@ -16,6 +16,7 @@ class Jot(QtGui.QTabWidget):
 		self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
 		self.setTabShape(QtGui.QTabWidget.Triangular)
 		self.setStyleSheet("QTabBar::tab { height: 24px; width: 100px; }")
+		self.setStyleSheet("QTabBar { border: none; padding: 0px; }")
 		self.setUsesScrollButtons(False)
 		self.setMovable(True)
 		self.setTabsClosable(True)
