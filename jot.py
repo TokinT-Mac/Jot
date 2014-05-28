@@ -1,13 +1,17 @@
 import sys
 from PyQt4 import QtGui, QtCore
+import editor
+from highlighter import Highlighter
 
 
 class Jot(QtGui.QTabWidget):
 	def __init__(self):
 		super(Jot, self).__init__()
 		self.windowControls = WindowControls(self)
+		self.documents = {}
 		self.defaultSize = (1000,600,1000,600)
 		self.initUI()
+		
 		
 	def initUI(self):
 		self.setGeometry(*self.defaultSize)
@@ -51,14 +55,7 @@ class Jot(QtGui.QTabWidget):
 		
 		
 	def TestTabs(self):
-		self.addTab(QtGui.QTextEdit(), 'test')
-		self.addTab(QtGui.QTextEdit(), 'test')
-		self.addTab(QtGui.QTextEdit(), 'test')
-		self.addTab(QtGui.QTextEdit(), 'test')
-		self.addTab(QtGui.QTextEdit(), 'test')
-		self.addTab(QtGui.QTextEdit(), 'test')
-		self.addTab(QtGui.QTextEdit(), 'test')
-		self.addTab(QtGui.QTextEdit(), 'test')
+		self.newFile()
 		
 	def setTabWidth(self):
 		default = 100
@@ -71,13 +68,22 @@ class Jot(QtGui.QTabWidget):
 			tabWidth = default
 			
 		self.setStyleSheet("QTabBar::tab { height: 24px; width: %spx; }"%str(tabWidth))
+		self.update()
 		
 	def addTab(self, *args):
 		super(Jot, self).addTab(*args)
 		self.setTabWidth()
 		
 	def newFile(self):
-		print 't'
+		doc = Document(parent = self)
+		self.documents[doc.codeEditor] = doc
+		self.addTab(doc.codeEditor, 'test')
+		
+	def loadFile(self):
+		doc = Document(parent = self,  mode='load')
+		self.documents[doc.codeEditor] = doc
+		self.addTab(doc.codeEditor, 'test2')
+			
 		
 	def maximizeEvent(self):
 		if not self.maximized:
@@ -203,6 +209,41 @@ class ControlButton(QtGui.QToolButton):
 			self.offset = None
 		else:
 			super(ControlButton, self).mouseReleaseEvent(event)
+			
+class Document(QtGui.QWidget):
+	def __init__(self, parent = None, mode = 'new',):
+		
+		QtGui.QWidget.__init__(self, parent)
+			
+		self.codeEditor = editor.CodeEditor()
+		self.formatter = Highlighter(self.codeEditor.document(), 'python')
+		
+		self.shortcutSave = QtGui.QShortcut('CTRL+S', self.codeEditor)
+		self.connect(self.shortcutSave, QtCore.SIGNAL("activated()"), self.saveFile)
+		
+		self.shortcutOpen = QtGui.QShortcut('CTRL+O', self.codeEditor)
+		self.connect(self.shortcutOpen, QtCore.SIGNAL('activated()'), self.parent().loadFile)
+		
+		self.shortcutNew = QtGui.QShortcut('CTRL+N', self.codeEditor)
+		self.connect(self.shortcutNew, QtCore.SIGNAL('activated()'), self.parent().newFile)
+		
+		if mode == 'load':
+			self.filename = QtGui.QFileDialog.getOpenFileName(self, 'Open File')
+			self.loadFile()
+		if mode == 'new':
+			self.filename = None
+			
+	def loadFile(self):
+		with open(self.filename, 'r') as file:
+			self.codeEditor.setPlainText(file.read())
+			
+	def saveFile(self):
+		if not self.filename:
+			self.filename = QtGui.QFileDialog.getSaveFileName(self, 'Save File')
+		
+		with open(self.filename, 'w') as file:
+			file.write(self.CodeEditor.document().toPlainText())
+			
 
 		
 def main():
