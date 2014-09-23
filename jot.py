@@ -1,8 +1,7 @@
 import sys
 from PyQt4 import QtGui, QtCore
-import editor
-from highlighter import Highlighter
-
+import tabs
+from document import Document
 
 class Jot(QtGui.QTabWidget):
 	def __init__(self):
@@ -10,6 +9,8 @@ class Jot(QtGui.QTabWidget):
 		self.windowControls = WindowControls(self)
 		self.documents = {}
 		self.defaultSize = (1000,600,1000,600)
+		self.fancyTabBar = tabs.FancyTabBar(parent=self)
+		self.setTabBar(self.fancyTabBar)
 		self.initUI()
 		
 		
@@ -19,13 +20,16 @@ class Jot(QtGui.QTabWidget):
 		self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
 		self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
 		self.setTabShape(QtGui.QTabWidget.Triangular)
-		self.setStyleSheet("QTabBar::tab { height: 24px; width: 100px; }")
-		self.setStyleSheet("QTabBar { border: none; padding: 0px; }")
+		#self.setStyleSheet("QTabBar::tab { min-width: 8ex; padding: 50px;} QTabBar::tab:selected { margin-left: -25px; margin-right: -25px;} QTabBar::tab:!selected { margin-top: 2px;}")
+		self.setStyleSheet("QTabBar { border: 10px; padding: 5px; }")
+		self.setStyleSheet("QTabWidget::pane {border-top: 5px solid #C2C7CB;}")
+		
 		self.setUsesScrollButtons(False)
 		self.setMovable(True)
 		self.setTabsClosable(True)
 		self.maximized = False
-		
+		self.minimized = False
+		self.show()
 		
 		self.TestTabs()
 		self.initControls()
@@ -33,11 +37,12 @@ class Jot(QtGui.QTabWidget):
 		
 		self.setCornerWidget(self.windowControls)
 		self.tabCloseRequested.connect(self.closeTab)
-		self.show()
+		
 	
 	def initControls(self):
 		self.windowControls.closeWindow.triggered.connect(self.close)
 		self.windowControls.maximizeWindow.triggered.connect(self.maximizeEvent)
+		self.windowControls.minimizeWindow.triggered.connect(self.minimizeEvent)
 		
 	def initActions(self):
 		newAction = QtGui.QAction('New', self)
@@ -71,33 +76,40 @@ class Jot(QtGui.QTabWidget):
 		self.update()
 		
 	def addTab(self, *args):
-		super(Jot, self).addTab(*args)
+		index = super(Jot, self).addTab(*args)
+		tabbar = self.tabBar()
+		tabbar.setTabButton(index, QtGui.QTabBar.RightSide, tabs.TabButton())
 		self.setTabWidth()
+		self.setCurrentIndex(index)
 		
 	def newFile(self):
 		doc = Document(parent = self)
 		self.documents[doc.codeEditor] = doc
-		self.addTab(doc.codeEditor, 'test')
+		self.addTab(doc.codeEditor, doc.basename)
 		
 	def loadFile(self):
-		doc = Document(parent = self,  mode='load')
+		doc = Document(parent = self).Open()
 		self.documents[doc.codeEditor] = doc
-		self.addTab(doc.codeEditor, 'test2')
+		self.addTab(doc.codeEditor, doc.basename)
 			
 		
 	def maximizeEvent(self):
 		if not self.maximized:
-			self.lastPosition = self.mapToGlobal(self.pos())
-			screen = QtGui.QDesktopWidget().availableGeometry()
-			self.move(0,0)
-			self.resize(screen.width(), screen.height())
 			self.maximized = True
+			self.showMaximized()
 			
 		else:
-			self.resize(self.defaultSize[0], self.defaultSize[1])
-			self.move(self.lastPosition)
 			self.maximized = False
+			self.showNormal()
 			
+	def minimizeEvent(self):
+		if not self.minimized:
+			self.miniized = True
+			self.showMinimized()
+		else:
+			self.showNormal()
+		
+		
 	def paintEvent(self, event):
 		super(Jot, self).paintEvent(event)
 		if self.maximized:
@@ -105,8 +117,8 @@ class Jot(QtGui.QTabWidget):
 			backgroundColor.setAlpha(200)
 			paint = QtGui.QPainter(self)
 			paint.fillRect(self.rect(), backgroundColor)
-		
-		
+			paint.end()
+				
 class WindowControls(QtGui.QWidget):
 	def __init__(self, parent):
 		super(WindowControls, self).__init__(parent)
@@ -210,7 +222,7 @@ class ControlButton(QtGui.QToolButton):
 		else:
 			super(ControlButton, self).mouseReleaseEvent(event)
 			
-class Document(QtGui.QWidget):
+'''class Document(QtGui.QWidget):
 	def __init__(self, parent = None, mode = 'new',):
 		
 		QtGui.QWidget.__init__(self, parent)
@@ -229,13 +241,17 @@ class Document(QtGui.QWidget):
 		
 		if mode == 'load':
 			self.filename = QtGui.QFileDialog.getOpenFileName(self, 'Open File')
+			self.basename = os.path.basename(str(self.filename))
 			self.loadFile()
 		if mode == 'new':
 			self.filename = None
+			self.basename = 'new'
 			
 	def loadFile(self):
 		with open(self.filename, 'r') as file:
-			self.codeEditor.setPlainText(file.read())
+			text = file.read()
+			print 'loaded'
+			self.codeEditor.setPlainText(text)
 			
 	def saveFile(self):
 		if not self.filename:
@@ -245,7 +261,7 @@ class Document(QtGui.QWidget):
 			file.write(self.CodeEditor.document().toPlainText())
 			
 
-		
+		'''
 def main():
 	app = QtGui.QApplication(sys.argv)
 	jot = Jot()
