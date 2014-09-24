@@ -222,46 +222,6 @@ class ControlButton(QtGui.QToolButton):
 		else:
 			super(ControlButton, self).mouseReleaseEvent(event)
 			
-'''class Document(QtGui.QWidget):
-	def __init__(self, parent = None, mode = 'new',):
-		
-		QtGui.QWidget.__init__(self, parent)
-			
-		self.codeEditor = editor.CodeEditor()
-		self.formatter = Highlighter(self.codeEditor.document(), 'python')
-		
-		self.shortcutSave = QtGui.QShortcut('CTRL+S', self.codeEditor)
-		self.connect(self.shortcutSave, QtCore.SIGNAL("activated()"), self.saveFile)
-		
-		self.shortcutOpen = QtGui.QShortcut('CTRL+O', self.codeEditor)
-		self.connect(self.shortcutOpen, QtCore.SIGNAL('activated()'), self.parent().loadFile)
-		
-		self.shortcutNew = QtGui.QShortcut('CTRL+N', self.codeEditor)
-		self.connect(self.shortcutNew, QtCore.SIGNAL('activated()'), self.parent().newFile)
-		
-		if mode == 'load':
-			self.filename = QtGui.QFileDialog.getOpenFileName(self, 'Open File')
-			self.basename = os.path.basename(str(self.filename))
-			self.loadFile()
-		if mode == 'new':
-			self.filename = None
-			self.basename = 'new'
-			
-	def loadFile(self):
-		with open(self.filename, 'r') as file:
-			text = file.read()
-			print 'loaded'
-			self.codeEditor.setPlainText(text)
-			
-	def saveFile(self):
-		if not self.filename:
-			self.filename = QtGui.QFileDialog.getSaveFileName(self, 'Save File')
-		
-		with open(self.filename, 'w') as file:
-			file.write(self.CodeEditor.document().toPlainText())
-			
-
-		'''
 def main():
 	app = QtGui.QApplication(sys.argv)
 	jot = Jot()

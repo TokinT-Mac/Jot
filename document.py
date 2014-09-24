@@ -11,14 +11,7 @@ class Document(QtGui.QWidget):
 		self.codeEditor = editor.CodeEditor()
 		self.formatter = Highlighter(self.codeEditor.document(), 'python')
 		
-		self.shortcutSave = QtGui.QShortcut('CTRL+S', self.codeEditor)
-		self.connect(self.shortcutSave, QtCore.SIGNAL("activated()"), self.Save)
-		
-		self.shortcutOpen = QtGui.QShortcut('CTRL+O', self.codeEditor)
-		self.connect(self.shortcutOpen, QtCore.SIGNAL('activated()'), self.parent().loadFile)
-		
-		self.shortcutNew = QtGui.QShortcut('CTRL+N', self.codeEditor)
-		self.connect(self.shortcutNew, QtCore.SIGNAL('activated()'), self.parent().newFile)
+		self.setupShortcuts()
 		
 		self.filename = None
 		self.basename = 'new'
@@ -57,3 +50,20 @@ class Document(QtGui.QWidget):
 		self.setFilePath(path)
 		self.saveFile()		
 		return self
+		
+	def setupShortcuts(self):
+		list = {
+			'open':	['CTRL+O',self.Save],
+			'save':	['CTRL+S',self.parent().loadFile], 
+			'new':	['CTRL+N', self.parent().newFile],
+					}
+		
+		self.shortcuts = {}
+		
+		for label, options in list.iteritems():
+			shortcut = QtGui.QShortcut(options[0], self.codeEditor)
+			self.connect(shortcut, QtCore.SIGNAL('activated()'), options[1])
+			self.shortcuts[label] = shortcut
+			
+			
+			
