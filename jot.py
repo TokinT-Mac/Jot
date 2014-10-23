@@ -2,6 +2,7 @@ import sys
 from PyQt4 import QtGui, QtCore
 import tabs
 from document import Document
+from tabs import SmartOrderList
 
 class Jot(QtGui.QTabWidget):
 	def __init__(self):
@@ -11,8 +12,11 @@ class Jot(QtGui.QTabWidget):
 		self.defaultSize = (1000,600,1000,600)
 		self.fancyTabBar = tabs.FancyTabBar(parent=self)
 		self.setTabBar(self.fancyTabBar)
+		self.tabButtons = SmartOrderList()
 		self.initUI()
 		
+		
+		self.tabBar().tabMoved.connect(self.tabButtons.moveItem)
 		
 	def initUI(self):
 		self.setGeometry(*self.defaultSize)
@@ -21,8 +25,8 @@ class Jot(QtGui.QTabWidget):
 		self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
 		self.setTabShape(QtGui.QTabWidget.Triangular)
 		#self.setStyleSheet("QTabBar::tab { min-width: 8ex; padding: 50px;} QTabBar::tab:selected { margin-left: -25px; margin-right: -25px;} QTabBar::tab:!selected { margin-top: 2px;}")
-		self.setStyleSheet("QTabBar { border: 10px; padding: 5px; }")
-		self.setStyleSheet("QTabWidget::pane {border-top: 5px solid #C2C7CB;}")
+		#self.setStyleSheet("QTabBar { border: 10px; padding: 5px; }")
+		self.setStyleSheet("QTabWidget::pane {border: 0px solid #C2C7CB;} QTabWidget::tab-bar { down: 5px;}")
 		
 		self.setUsesScrollButtons(False)
 		self.setMovable(True)
@@ -58,6 +62,11 @@ class Jot(QtGui.QTabWidget):
 		else:
 			self.close()
 		
+	def closeTabById(self, id):
+		print 'closing %s'%str(id)
+		index = self.tabButtons.getIndexById(id)
+		self.tabButtons.removeItem(index)
+		self.closeTab(index)
 		
 	def TestTabs(self):
 		self.newFile()
@@ -65,32 +74,41 @@ class Jot(QtGui.QTabWidget):
 	def setTabWidth(self):
 		default = 100
 		width = self.width()-self.windowControls.width()
+		print width
+		print self.windowControls.sizeHint().width()
 		perTab = width/self.count()
-		if perTab < 100:
-			tabWidth = perTab
+		if perTab < 122:
+			tabWidth = perTab-22
 			
 		else:
 			tabWidth = default
 			
-		self.setStyleSheet("QTabBar::tab { height: 24px; width: %spx; }"%str(tabWidth))
+		self.setStyleSheet("QTabBar::tab { height: 24px; width: %spx; }"%str(int(tabWidth)))
+		print tabWidth
 		self.update()
 		
-	def addTab(self, *args):
-		index = super(Jot, self).addTab(*args)
+	def addTab(self, document):
+		index = super(Jot, self).addTab(document.codeEditor, document.basename)
 		tabbar = self.tabBar()
-		tabbar.setTabButton(index, QtGui.QTabBar.RightSide, tabs.TabButton())
+		tabbar.setTabButton(index, QtGui.QTabBar.RightSide, document.StatusIcon)
 		self.setTabWidth()
 		self.setCurrentIndex(index)
+		self.tabButtons.addItem(document.StatusIcon)
+		document.StatusIcon.clicked.connect(self.closeTabById)
+		listindex = self.tabButtons.getIndexById(document.StatusIcon.id)
+		print 'tab id: %s - list id: %s'%(str(index), str(listindex))
 		
 	def newFile(self):
 		doc = Document(parent = self)
-		self.documents[doc.codeEditor] = doc
-		self.addTab(doc.codeEditor, doc.basename)
+		#self.documents[doc.codeEditor] = doc
+		self.addTab(doc)
 		
 	def loadFile(self):
 		doc = Document(parent = self).Open()
-		self.documents[doc.codeEditor] = doc
-		self.addTab(doc.codeEditor, doc.basename)
+		if not doc == False:
+			#self.documents[doc.codeEditor] = doc
+			self.addTab(doc.codeEditor, doc.basename)
+		
 			
 		
 	def maximizeEvent(self):

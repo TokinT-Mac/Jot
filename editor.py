@@ -22,7 +22,7 @@ class CodeEditor(QtGui.QPlainTextEdit):
 	def __init__(self,parent=None):
 		QtGui.QPlainTextEdit.__init__(self,parent)
 		self.lineNumberArea = LineNumberArea (self)
-		
+		self.Document = parent
 		
 		#set font and tab size TODO: make this configurable
 		self.setStyleSheet('font: 10pt "Courier New";')
@@ -36,6 +36,9 @@ class CodeEditor(QtGui.QPlainTextEdit):
 				
 		self.connect(self, QtCore.SIGNAL("cursorPositionChanged()"), 
 					 self.highlightCurrentLine)
+					 
+		self.connect(self, QtCore.SIGNAL('textChanged()'), 
+					self.updateDirtyFile)
 
 		self.updateLineNumberAreaWidth(0)
 		self.errorPos=None
@@ -125,6 +128,10 @@ class CodeEditor(QtGui.QPlainTextEdit):
 				extraSelections.append(errorSel)
 
 		self.setExtraSelections(extraSelections)
+		
+	def updateDirtyFile(self):
+		return self.Document.updateDirty()
+		
 
 if __name__ == "__main__":
 	
