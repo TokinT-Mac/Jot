@@ -17,7 +17,7 @@ class Document(QtGui.QWidget):
 		self.filename = None
 		self.basename = 'new'
 		
-		self.StatusIcon = TabButton()
+		#self.StatusIcon = TabButton()
 			
 	def loadFile(self):
 		with open(self.filename, 'r') as file:
@@ -56,11 +56,11 @@ class Document(QtGui.QWidget):
 				
 		self.setFilePath(path)
 		self.saveFile()
-		self.StatusIcon.setClean()
+		#self.StatusIcon.setClean()
 		return self
 		
 	def setupShortcuts(self):
-		list = {
+		shortcuts = {
 			'open':	['CTRL+O', self.parent().loadFile],
 			'save':	['CTRL+S', self.Save], 
 			'new':	['CTRL+N', self.parent().newFile],
@@ -68,13 +68,13 @@ class Document(QtGui.QWidget):
 		
 		self.shortcuts = {}
 		
-		for label, options in list.iteritems():
+		for label, options in shortcuts.iteritems():
 			shortcut = QtGui.QShortcut(options[0], self.codeEditor)
 			self.connect(shortcut, QtCore.SIGNAL('activated()'), options[1])
 			self.shortcuts[label] = shortcut
 			
 	def updateDirty(self):
-		self.StatusIcon.setDirty()
+		#self.StatusIcon.setDirty()
 		return True
 			
 			

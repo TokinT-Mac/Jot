@@ -162,7 +162,7 @@ if __name__ == "__main__":
 			elif s.startswith('Extra data'):
 				pos=int(s.split(' ')[-3])
 			else:
-				print 'UNKNOWN ERROR'
+				print 'UKNOWN ERROR'
 				
 		# This makes a red bar appear in the line
 		# containing position pos

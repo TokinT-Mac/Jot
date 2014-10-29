@@ -2,35 +2,49 @@ import sys
 from PyQt4 import QtGui, QtCore
 import tabs
 from document import Document
-from tabs import SmartOrderList
+from tabs import FancyTabWidget
+from winControl import WindowControls
+import logging
+moduleLogger = logging.getLogger('Jot')
+LOG_LEVEL = logging.DEBUG
+LOG_FILE = 'debug.log'
+logging.basicConfig(level=LOG_LEVEL, filename=LOG_FILE, format='%(asctime)s %(name)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
-class Jot(QtGui.QTabWidget):
+class Jot(FancyTabWidget):
 	def __init__(self):
 		super(Jot, self).__init__()
-		self.windowControls = WindowControls(self)
+		#self.tabWidget = FancyTabWidget(self)
+		self.windowControls = WindowControls(self) #create the Max, Min, & Close buttons
+		#self.tabWidget.show()
 		self.documents = {}
 		self.defaultSize = (1000,600,1000,600)
-		self.fancyTabBar = tabs.FancyTabBar(parent=self)
-		self.setTabBar(self.fancyTabBar)
-		self.tabButtons = SmartOrderList()
+		#self.fancyTabBar = tabs.FancyTabBar(parent=self)
+		#self.setTabBar(self.fancyTabBar)
+		#self.tabButtons = SmartOrderList()
 		self.initUI()
 		
 		
-		self.tabBar().tabMoved.connect(self.tabButtons.moveItem)
+		#self.tabBar().tabMoved.connect(self.tabButtons.moveItem)
 		
 	def initUI(self):
 		self.setGeometry(*self.defaultSize)
 		self.move(QtGui.QDesktopWidget().availableGeometry().center()-self.rect().center())
+		
+		#hbox = QtGui.QHBoxLayout()
+		#hbox.setSpacing(0)
+		##hbox.setMargin(0)
+		#hbox.addWidget(self.tabWidget)
+		#self.setLayout(hbox)
 		self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
 		self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
-		self.setTabShape(QtGui.QTabWidget.Triangular)
+		#self.setTabShape(QtGui.QTabWidget.Triangular)
 		#self.setStyleSheet("QTabBar::tab { min-width: 8ex; padding: 50px;} QTabBar::tab:selected { margin-left: -25px; margin-right: -25px;} QTabBar::tab:!selected { margin-top: 2px;}")
 		#self.setStyleSheet("QTabBar { border: 10px; padding: 5px; }")
-		self.setStyleSheet("QTabWidget::pane {border: 0px solid #C2C7CB;} QTabWidget::tab-bar { down: 5px;}")
+		#self.setStyleSheet("QTabWidget::pane {border: 0px solid #C2C7CB;} QTabWidget::tab-bar { down: 5px;}")
 		
-		self.setUsesScrollButtons(False)
-		self.setMovable(True)
-		self.setTabsClosable(True)
+		#self.setUsesScrollButtons(False)
+		#self.setMovable(True)
+		#self.setTabsClosable(True)
 		self.maximized = False
 		self.minimized = False
 		self.show()
@@ -44,9 +58,9 @@ class Jot(QtGui.QTabWidget):
 		
 	
 	def initControls(self):
-		self.windowControls.closeWindow.triggered.connect(self.close)
-		self.windowControls.maximizeWindow.triggered.connect(self.maximizeEvent)
-		self.windowControls.minimizeWindow.triggered.connect(self.minimizeEvent)
+		self.windowControls.close.connect(self.close)
+		self.windowControls.maximize.connect(self.maximizeEvent)
+		self.windowControls.minimize.connect(self.minimizeEvent)
 		
 	def initActions(self):
 		newAction = QtGui.QAction('New', self)
@@ -88,15 +102,8 @@ class Jot(QtGui.QTabWidget):
 		self.update()
 		
 	def addTab(self, document):
-		index = super(Jot, self).addTab(document.codeEditor, document.basename)
-		tabbar = self.tabBar()
-		tabbar.setTabButton(index, QtGui.QTabBar.RightSide, document.StatusIcon)
-		self.setTabWidth()
-		self.setCurrentIndex(index)
-		self.tabButtons.addItem(document.StatusIcon)
-		document.StatusIcon.clicked.connect(self.closeTabById)
-		listindex = self.tabButtons.getIndexById(document.StatusIcon.id)
-		print 'tab id: %s - list id: %s'%(str(index), str(listindex))
+		index = super(Jot, self).addTab(document)
+		print index
 		
 	def newFile(self):
 		doc = Document(parent = self)
@@ -107,7 +114,7 @@ class Jot(QtGui.QTabWidget):
 		doc = Document(parent = self).Open()
 		if not doc == False:
 			#self.documents[doc.codeEditor] = doc
-			self.addTab(doc.codeEditor, doc.basename)
+			self.addTab(doc)
 		
 			
 		
@@ -137,108 +144,10 @@ class Jot(QtGui.QTabWidget):
 			paint.fillRect(self.rect(), backgroundColor)
 			paint.end()
 				
-class WindowControls(QtGui.QWidget):
-	def __init__(self, parent):
-		super(WindowControls, self).__init__(parent)
-		self.initUI()
-		self.initClose()
-		self.initMax()
-		self.initMin()
+class Jot2(QtGui.QWidget):
+	def __init__(self):
+		super(Jot2, self).__init__(self)
 		
-	def initUI(self):
-		self.closeButton = ControlButton(self)
-		self.closeButton.setStyleSheet("QToolButton { border: none; padding: 0px; }")
-		self.closeButton.setIconSize(QtCore.QSize(16,16))
-		self.closeButton.setAutoRaise(True)
-
-		self.maxButton = ControlButton(self)
-		self.maxButton.setStyleSheet("QToolButton { border: none; padding: 0px; }")
-		self.maxButton.setIconSize(QtCore.QSize(16,16))
-		self.maxButton.setAutoRaise(True)
-
-		self.minButton = ControlButton(self)
-		self.minButton.setStyleSheet("QToolButton { border: none; padding: 0px; }")
-		self.minButton.setIconSize(QtCore.QSize(16,16))
-		self.minButton.setAutoRaise(True)
-			
-		
-		hbox = QtGui.QHBoxLayout()
-		hbox.setSpacing(0)
-		hbox.setMargin(0)
-		hbox.addWidget(self.minButton)
-		hbox.addWidget(self.maxButton)
-		hbox.addWidget(self.closeButton)
-		
-		self.setLayout(hbox)
-		
-	def initClose(self):
-		self.closeWindow = QtGui.QAction('Close', self)
-		closeIcon = QtGui.QIcon()
-		closeIcon.addFile('images/x-grey.svg', mode=QtGui.QIcon.Normal)
-		closeIcon.addFile('images/x-red.svg', mode=QtGui.QIcon.Active)
-		self.closeWindow.setIcon(closeIcon)
-		self.closeButton.setDefaultAction(self.closeWindow)
-		
-	def initMax(self):
-		self.maximizeWindow = QtGui.QAction('Maximize', self)
-		maxIcon = QtGui.QIcon()
-		maxIcon.addFile('images/maximize-blue.svg', mode=QtGui.QIcon.Active)
-		maxIcon.addFile('images/circle-grey.svg', mode=QtGui.QIcon.Normal)
-		self.maximizeWindow.setIcon(maxIcon)
-		self.maxButton.setDefaultAction(self.maximizeWindow)
-		
-	def initMin(self):
-		self.minimizeWindow = QtGui.QAction('Minimize', self)
-		minIcon = QtGui.QIcon()
-		minIcon.addFile('images/minimize-blue.svg', mode=QtGui.QIcon.Active)
-		minIcon.addFile('images/circle-grey.svg', mode=QtGui.QIcon.Normal)
-		self.minimizeWindow.setIcon(minIcon)
-		self.minButton.setDefaultAction(self.minimizeWindow)
-		
-	'''def mousePressEvent(self, event):
-		self.offset = event.pos()
-
-	def mouseMoveEvent(self, event):
-		x=event.globalX()
-		y=event.globalY()
-		x_w = self.offset.x()
-		y_w = self.offset.y()
-		self.parent().move(x-x_w, y-y_w)
-		'''
-	def move(self, *args):
-		self.parent().move(*args)
-		
-class ControlButton(QtGui.QToolButton):
-	def mousePressEvent(self, event):
-		localOffset = event.pos()
-		widgetOffset = self.mapToParent(localOffset)
-		globalOffset = self.parent().mapToParent(widgetOffset)
-
-		self.offset = globalOffset
-		self.jitter = 0
-		self.moved = False
-
-		super(ControlButton, self).mousePressEvent(event)
-		
-	def mouseMoveEvent(self, event):
-		if self.offset:
-			self.jitter += 1
-			
-		if self.jitter > 5:
-			x=event.globalX()
-			y=event.globalY()
-			x_w = self.offset.x()
-			y_w = self.offset.y()
-			self.parent().move(x-x_w, y-y_w)
-
-			self.moved = True
-		
-	def mouseReleaseEvent(self, event):
-		if self.moved:
-			self.moved = False
-			self.offset = None
-		else:
-			super(ControlButton, self).mouseReleaseEvent(event)
 			
 def main():
 	app = QtGui.QApplication(sys.argv)
